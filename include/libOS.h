@@ -3,6 +3,10 @@
 #include "linkedList.h"
 #include "operation.h"
 
+/***
+ * @brief 
+*/
+
 typedef struct File{
     char* fileName; 
     char* content;

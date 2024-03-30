@@ -4,6 +4,7 @@
 #include "operation.h"
 #include "linkedList.h"
 
+#define ROW_SIZE 10
 
 
 
@@ -122,6 +123,8 @@ void initPartition(Partition *partition) {
 void printPartitionData(Partition partition) {
     printf("**********************************\n");
     printf("PARTITION INFO\n");
+    printf("block  free %d\n", partition.free_blocks);
+    printf("next empty%d\n", partition.next_free_block);
     for (int i = 0; i < FAT_SIZE; i++) {
         if(!partition.files[i].is_free){
         printf("File %d - Name: %s, Size: %d, is_free: %d\n", i + 1,
@@ -223,7 +226,7 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
     partition->files[file_index].is_free = false; // Marquer le fichier comme occupé
 
     // Mise à jour des informations sur la partition
-    partition->free_blocks -= blocks_needed;
+    partition->free_blocks = calculateEmptyBlocks(partition);
     partition->next_free_block += blocks_needed;
 
     saveInPartition(*partition, partition_name); 
@@ -231,9 +234,19 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
 }
 
 
-int updateFileContent(Partition *partition, char* partition_name, char *filename, void *data, int size) {
+int calculateEmptyBlocks(Partition *partition) {
+    int empty_blocks = 0;
+    for (int i = 0; i < FAT_SIZE; ++i) {
+        if (!partition->fat[i]) {
+            empty_blocks++;
+        }
+    }
+    return empty_blocks;
+}
+
+int updateFileContent(Partition *partition, char *partition_name, char *filename, void *data, int size) {
     // Vérifier si un fichier avec le même nom existe déjà dans la partition
-    LinkedList fileIndexes = findIndexesByName(partition, filename);
+    void *fileIndexes = findIndexesByName(partition, filename);
     if (fileIndexes == NULL) {
         printf("Aucun fichier enregistré à ce nom, veuillez créer un fichier.\n");
         return -1;
@@ -241,27 +254,48 @@ int updateFileContent(Partition *partition, char* partition_name, char *filename
 
     // Copier le nouveau contenu dans les blocs correspondants
     int offset = 0;
-    Cell *current = fileIndexes;
+    void *current = fileIndexes;
     while (current != NULL && offset < size) {
-        memcpy(partition->data[current->value.intValue], (char *)data + offset, BLOCK_SIZE);
+        memcpy(partition->data[*((int *)current)], (char *)data + offset, BLOCK_SIZE);
         offset += BLOCK_SIZE;
-        current = current->next;
+        current = ((int *)current) + 1;
     }
 
     // Mettre à jour la taille du fichier
-    int fileSize = strlen(data)+1; // Calculer le nombre de blocs nécessaires
-    strncpy(partition->files[fileIndexes->value.intValue].name, filename, sizeof(partition->files[fileIndexes->value.intValue].name));
-    partition->files[fileIndexes->value.intValue].size = fileSize;
+    int fileSize = size; // Calculer le nombre de blocs nécessaires
+    strncpy(partition->files[*((int *)fileIndexes)].name, filename, sizeof(partition->files[*((int *)fileIndexes)].name));
+    partition->files[*((int *)fileIndexes)].size = fileSize;
 
     // Libérer la mémoire utilisée par la liste des index des blocs du fichier
-    clear(&fileIndexes);
+    clear(fileIndexes);
+
+    // Mettre à jour les informations sur les blocs libres
+    int blocCourant = partition->next_free_block;
+    int blocPrecedent = -1;
+    while (blocCourant != -1) {
+        if (partition->fat[blocCourant] == false) {
+            partition->fat[blocCourant] = true;
+            partition->free_blocks--;
+            if (blocPrecedent != -1) {
+                partition->fat[blocPrecedent] = false;
+            }
+            break;
+        }
+        blocPrecedent = blocCourant;
+        blocCourant = (blocCourant + 1) % FAT_SIZE;
+    }
+    if (blocCourant == -1) {
+        printf("Aucun bloc libre trouvé pour écrire le contenu du fichier.\n");
+        return -1;
+    }
+    partition->next_free_block = blocCourant;
+    partition->free_blocks = calculateEmptyBlocks(partition);
 
     // Mise à jour des informations sur la partition
     saveInPartition(*partition, partition_name);
 
     return 0; // Écriture du fichier réussie
 }
-
 
 
 /**
@@ -407,4 +441,30 @@ int deleteFile(Partition *partition, char* partitionName, char* filename) {
  */
 int exists(Partition *partition,char *filename) {
     return findIndexesByName(partition, filename) != NULL;
+}
+
+
+void printPartitionState(Partition* partition) {
+    printf("État de la partition :\n");
+    printf("----------------------\n");
+    printf("Blocs libres : %d\n", partition->free_blocks);
+    printf("Bloc suivant libre : %d\n", partition->next_free_block);
+
+    for(int i=1; i<=FAT_SIZE; i++){
+        if(i%10==0){
+            if(!partition->files[i-1].is_free){
+                printf("[Taken] ");
+            } else {
+                printf("[-]    ");
+            }
+            printf("\n");
+        }else{
+            if(!partition->files[i].is_free){
+                printf("[Taken] ");
+            } else {
+                printf("[-]    ");
+            }
+        }
+
+    }
 }

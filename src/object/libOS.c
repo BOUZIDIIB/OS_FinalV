@@ -114,31 +114,6 @@ void setFileContent(File* file, char* data) {
 
 
 
-File myRead(Partition *partition, char* partitionName, char* fileName) {
-    File f;
-    f.fileName = strdup(fileName);
-    // Récupère le contenu entier du fichier
-    LinkedList content = readFile(*partition, fileName);
-    int contentLength = len(content);
-    f.size = contentLength+1;
-
-    f.content = (char*)malloc((contentLength + 1) * sizeof(char)); // +1 pour le caractère nul de fin de chaîne
-    if (f.content == NULL) {
-        perror("Erreur d'allocation de mémoire");
-        exit(EXIT_FAILURE);
-    }
-
-    // Copier le contenu de la liste chaînée dans le tableau de contenu du fichier
-    int i = 0;
-    while (content != NULL) {
-        f.content[i] = content->value.charValue;
-        content = content->next;
-        i++;
-    }
-    f.content[i] = '\0';
-    return f;
-}
-
 
 /**
  * La fonction `displayFile` prend un pointeur vers une structure `File` en entrée et affiche des
@@ -167,11 +142,20 @@ void displayFile(File* file) {
 
 
 
+/**
+ * La fonction `myRemove` supprime un fichier d'une partition spécifiée.
+ * 
+ * @param partition Pointeur vers une structure Partition, qui contient probablement des informations
+ * sur une partition de stockage sur un périphérique.
+ * @param partitionName Le nom de la partition de laquelle le fichier doit être supprimé.
+ * @param fileName Le paramètre `fileName` dans la fonction `myRemove` représente le nom du fichier que
+ * vous souhaitez supprimer de la partition spécifiée.
+ */
 void myRemove(Partition *partition, char* partitionName, char* fileName){
     deleteFile(partition, partitionName, fileName);
 }
 
-// Fonction pour libérer la mémoire allouée pour un fichier
+
 void freeFile(File* file) {
     if (file == NULL) {
         return;
