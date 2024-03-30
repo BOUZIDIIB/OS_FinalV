@@ -10,11 +10,12 @@ int main() {
     printf("Start");
     Partition partition = create_or_load_partition(PARTITION_NAME);
     printPartitionData(partition); 
-    char* data = "HelloWorld !"; 
+    char* data = "NewHelloWorld je suis en train d\'écrire un super lon text !"; 
     char readBuffer[100];
     char* fileName = "test1";
-    writeToFile(&partition, PARTITION_NAME, fileName,data, strlen(data)+1);
+    updateFileContent(&partition, PARTITION_NAME, fileName, data, strlen(data)+1);
     printPartitionData(partition); 
+
     LinkedList indexOfFile = findIndexesByName(&partition, fileName); 
     printList(indexOfFile);
     printf("\nLecture du fichier %s", fileName);

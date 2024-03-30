@@ -18,6 +18,8 @@ typedef struct Cell {
 } Cell;
 
 typedef Cell* LinkedList;
+
+
 void initList( LinkedList* list); 
 Cell* createCell(int data, ListType type); 
 void append(LinkedList* list, int data, ListType type); 
@@ -25,4 +27,6 @@ void printList(LinkedList list);
 void pop(LinkedList* list); 
 void clear(LinkedList* list); 
 int len(LinkedList list); 
+    
+
 #endif

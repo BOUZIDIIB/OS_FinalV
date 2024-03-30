@@ -9,10 +9,10 @@
 #define BLOCK_SIZE 1024
 #define PARTITION_SIZE 1000 
 
+
 typedef struct {
     char name[100];
     int size;
-    int start_block;
     bool is_free;
 } FileInfo;
 
@@ -27,15 +27,16 @@ typedef struct {
 
 Partition create_or_load_partition(char *partitionName);
 void printPartitionData(Partition partition);
-void initFileInfo(FileInfo *fileInfo, const char *name, int size, int start_block, bool is_free); 
 void initPartition(Partition *partition);
 void saveInPartition(Partition partition, char *partitionName);
 void loadPartition(Partition* partition, char *partitionName);
-LinkedList readWholeFile(Partition *partition, LinkedList indexes); 
-LinkedList readFile(Partition Partition, char* fileName);
+LinkedList readWholeFile(Partition *partition, LinkedList indexes); //
+LinkedList readFile(Partition Partition, char* fileName); //
 LinkedList findIndexesByName(Partition *partition, char *filename); 
 int writeToFile(Partition *partition, char* partition_name ,char *filename, void *data, int size); 
-
+void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free); 
+Partition create_new_partition(char* partitionName);
+int updateFileContent(Partition *partition, char* partition_name, char *filename, void *data, int size);
 
 
 #endif

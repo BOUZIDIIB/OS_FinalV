@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "stdlib.h": "c",
+        "operation.h": "c",
+        "projetlib.h": "c"
+    },
+    "docwriter.language": "French"
+}
