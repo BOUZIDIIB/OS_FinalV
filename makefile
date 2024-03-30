@@ -1,4 +1,6 @@
 LIB := -Iinclude
+CFLAGS = -Wall -Werror -I/usr/include
+
 
 all : op list main
 
@@ -11,6 +13,6 @@ list : src/linkedList.c
 
 main : src/test.c bin/op.o bin/list.o
 	gcc $^ $(LIB) -o bin/main
-
+	
 exe :
 	bin/main
