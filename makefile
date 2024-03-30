@@ -1,4 +1,6 @@
 LIB := -Iinclude
+CFLAGS = -Wall -Werror -I/usr/include
+
 
 all : list op lib main projet
 
