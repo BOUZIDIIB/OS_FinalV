@@ -392,3 +392,19 @@ int deleteFile(Partition *partition, char* partitionName, char* filename) {
 
     return 0; // Suppression du fichier réussie
 }
+
+/**
+ * La fonction `fileExists` vérifie si un fichier avec un nom donné existe dans une partition en recherchant
+ * dans la table d'allocation de fichiers (FAT).
+ * 
+ * @param partition Un pointeur vers une structure `Partition` contenant des informations sur une partition
+ *                  du système de fichiers, telles que la table d'allocation de fichiers (FAT) et des
+ *                  informations sur les fichiers.
+    * @param filename Le nom du fichier à rechercher, spécifié en tant que tableau de caractères.
+ * 
+ * @return Retourne une valeur entière : 1 (vrai) si le fichier avec le nom donné est trouvé dans la
+ *         partition, 0 (faux) sinon.
+ */
+int exists(Partition *partition,char *filename) {
+    return findIndexesByName(partition, filename) != NULL;
+}

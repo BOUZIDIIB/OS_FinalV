@@ -10,15 +10,15 @@ typedef struct File{
 }File;
 
 
-int myFormat(Partition * partition, char* partitionName); //
+int myFormat(Partition * partition, char* partitionName); 
 File myOpen(Partition *partition, char* partitionName, char *fileName);  ///
-int myWrite(Partition *partition, char* partitionName,File* f); //
-File myRead(Partition *partition, char* partitionName, char* fileName);
-void mySeek(File* f, int offset, int base);
+int myWrite(Partition *partition, char* partitionName, File* f); //
+void myRemove(Partition *partition, char* partitionName, char* fileName);
 File createFile(char* fileName, char* content);
 void displayFile(File* file);
-int exists(Partition *partition,char *filename);
+void setFileContent(File* file, char* data);
+void freeFile(File* file); 
 
-
-        
+int myFormatExists(char* partitionName);
+File myRead(Partition *partition, char* partitionName, char* fileName);         
 #endif

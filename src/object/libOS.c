@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+
 #include "libOS.h"
 #include "operation.h"
 #include "linkedList.h"
@@ -48,7 +50,6 @@ File myOpen(Partition *partition, char* partitionName, char *fileName) {
     file.fileName = fileName;
 
     if (exists(partition, fileName)) {
-        printf("Le fichier existe\n");
         // Si le fichier existe, vous pouvez décider de le lire dans 'file.content'
         // Par exemple, vous pouvez utiliser la fonction 'readFile' pour obtenir le contenu du fichier
 
@@ -83,6 +84,33 @@ File myOpen(Partition *partition, char* partitionName, char *fileName) {
 int myWrite(Partition *partition, char* partitionName,File* f){
     return updateFileContent(partition, partitionName, f->fileName, f->content, f->size);
 }   
+
+void setFileContent(File* file, char* data) {
+    // Vérifier si le contenu existe déjà
+    // if (file->content != NULL) {
+    //     // Si oui, libérer la mémoire
+    //     free(file->content);
+    //     file->content = NULL;
+    // }
+
+    // Vérifier si la donnée est vide
+    if (data == NULL) {
+        file->size = 0;
+        return; // Sortir de la fonction si la donnée est vide
+    }
+
+    // Allouer de la mémoire pour la nouvelle donnée
+    file->size = strlen(data);
+    file->content = (char*)malloc((file->size + 1) * sizeof(char)); // +1 pour le caractère nul de fin de chaîne
+    if (file->content == NULL) {
+        fprintf(stderr, "Erreur d'allocation de mémoire\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Copier la nouvelle donnée dans le contenu du fichier
+    strcpy(file->content, data);
+}
+
 
 
 
@@ -130,22 +158,42 @@ void displayFile(File* file) {
 
     printf("Nom du fichier : %s\n", file->fileName);
     printf("Taille du fichier : %d octets\n", file->size);
-    printf("Contenu du fichier :\n%s\n", file->content);
+    if(file->size > 0){
+        printf("Contenu du fichier :\n%s\n", file->content);
+    }else{
+        printf("(Vide)\n");
+    }
 }
 
 
-/**
- * La fonction `fileExists` vérifie si un fichier avec un nom donné existe dans une partition en recherchant
- * dans la table d'allocation de fichiers (FAT).
- * 
- * @param partition Un pointeur vers une structure `Partition` contenant des informations sur une partition
- *                  du système de fichiers, telles que la table d'allocation de fichiers (FAT) et des
- *                  informations sur les fichiers.
-    * @param filename Le nom du fichier à rechercher, spécifié en tant que tableau de caractères.
- * 
- * @return Retourne une valeur entière : 1 (vrai) si le fichier avec le nom donné est trouvé dans la
- *         partition, 0 (faux) sinon.
- */
-int exists(Partition *partition,char *filename) {
-    return findIndexesByName(partition, filename) != NULL;
+
+void myRemove(Partition *partition, char* partitionName, char* fileName){
+    deleteFile(partition, partitionName, fileName);
+}
+
+// Fonction pour libérer la mémoire allouée pour un fichier
+void freeFile(File* file) {
+    if (file == NULL) {
+        return;
+    }
+
+    if (file->fileName != NULL) {
+        free(file->fileName);
+        file->fileName = NULL;
+    }
+
+    if (file->content != NULL) {
+        free(file->content);
+        file->content = NULL;
+    }
+
+    file->size = 0;
+}
+
+
+int myFormatExists(char* partitionName){
+    if (access(partitionName, F_OK) == 0) {
+        return 1;
+    } 
+    return 0;
 }

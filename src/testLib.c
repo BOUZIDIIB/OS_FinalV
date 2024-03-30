@@ -14,17 +14,31 @@ int main() {
     char bufferReader[BUFFER_SIZE];
     Partition partition; 
 
-
-    // if (myFormat(&partition, partitionName)){
-    //     printPartitionData(partition); 
-    // }
-    loadPartition(&partition, partitionName);
+    int partitionExists = myFormatExists(partitionName);
+    printf("myFormatExist: %d\n", partitionExists);
+    if(partitionExists){
+        loadPartition(&partition, partitionName);
+    }else{
+        myFormat(&partition, partitionName);
+    }
     int res = exists(&partition, fileName);
+    printf("Le fichier existe "); 
+    File file;
     if(res){
-        File file = myRead(&partition, partitionName, fileName);
+        printf(": oui\n");
+        file = myOpen(&partition, partitionName, fileName); 
         displayFile(&file);
+        myRemove(&partition, partitionName, fileName);
+        printf("Fichier supprimer de la partition\n");
+    }else{
+        printf(": non\n");
+        file = myOpen(&partition, partitionName, fileName);
+        displayFile(&file);
+        setFileContent(&file, data);
+        myWrite(&partition, partitionName, &file);
+        printf("Fichier écris dans la partition\n");
+
     }
     printPartitionData(partition);
-
 
 }

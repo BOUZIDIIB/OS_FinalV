@@ -12,7 +12,7 @@ static char args_doc[] = "COMMAND [OPTIONS...]";
 
 /* The options we understand. */
 static struct argp_option options[] = {
- {"format", 'f', "PARTITION", 0, "Formater la partition spécifiée"},
+{"format", 'f', "PARTITION", 0, "Formater la partition spécifiée"},
 {"open", 'o', "FICHIER", 0, "Ouvrir le fichier spécifié"},
 {"write", 'w', "FICHIER BUFFER TAILLE", 0, "Écrire le tampon spécifié dans le fichier spécifié"},
 {"read", 'r', "FICHIER COMPTEUR_DE_BYTES", 0, "Lire COMPTEUR_DE_BYTES octets à partir du fichier spécifié"},
