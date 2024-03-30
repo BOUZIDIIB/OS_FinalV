@@ -299,7 +299,6 @@ LinkedList findIndexesByName(Partition *partition, char *filename) {
  * @return Une `LinkedList` contenant le contenu du fichier lu à partir de la partition spécifiée,
  * en fonction des index fournis. Chaque élément de la liste contient les données d'un bloc de fichier.
  */
-
 LinkedList readWholeFile(Partition *partition, LinkedList indexes) {
     LinkedList result = NULL;
     LinkedList current = NULL;
@@ -356,4 +355,40 @@ LinkedList readWholeFile(Partition *partition, LinkedList indexes) {
 LinkedList readFile(Partition partition, char* fileName){
     LinkedList fileIndex = findIndexesByName(&partition, fileName);
     return readWholeFile(&partition, fileIndex); 
+}
+
+
+int deleteFile(Partition *partition, char* partitionName, char* filename) {
+    // Rechercher les index des blocs appartenant au fichier
+    LinkedList fileIndexes = findIndexesByName(partition, filename);
+    if (fileIndexes == NULL) {
+        printf("Aucun fichier enregistré à ce nom.\n");
+        return -1; // Le fichier n'existe pas
+    }
+
+    // Parcourir la liste des index des blocs et les marquer comme libres
+    while (fileIndexes != NULL) {
+        int blockIndex = fileIndexes->value.intValue;
+        partition->fat[blockIndex] = false; // Marquer le bloc comme libre dans la FAT
+        // Effacer le contenu du bloc si nécessaire
+        memset(partition->data[blockIndex], 0, BLOCK_SIZE); // Remplir le bloc avec des zéros
+        fileIndexes = fileIndexes->next;
+    }
+
+    // Réinitialiser les informations sur le fichier dans la partition
+    for (int i = 0; i < FAT_SIZE; i++) {
+        if (strcmp(partition->files[i].name, filename) == 0) {
+            // Marquer le fichier comme libre
+            initFileInfo(&(partition->files[i]), "", 0, true);
+            break;
+        }
+    }
+
+    // Mise à jour des informations sur la partition
+    saveInPartition(*partition, partitionName);
+
+    // Libérer la mémoire utilisée par la liste des index des blocs du fichier
+    clear(&fileIndexes);
+
+    return 0; // Suppression du fichier réussie
 }

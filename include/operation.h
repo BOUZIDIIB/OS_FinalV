@@ -37,6 +37,6 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
 void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free); 
 Partition create_new_partition(char* partitionName);
 int updateFileContent(Partition *partition, char* partition_name, char *filename, void *data, int size);
-
+int deleteFile(Partition *partition, char* partitionName, char* filename); 
 
 #endif

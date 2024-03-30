@@ -21,7 +21,12 @@ int main() {
     printf("\nLecture du fichier %s", fileName);
     LinkedList res = readFile(partition, fileName);
     printList(res);
+    
+    
+    deleteFile(&partition, PARTITION_NAME, fileName);
+    printPartitionData(partition);
     printf("End"); 
+
     return EXIT_SUCCESS;
 }
     
