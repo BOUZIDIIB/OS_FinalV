@@ -13,9 +13,6 @@ bool isSet;
 
 
 
-
-
-
 int main() {
     isSet = false;
     int result;

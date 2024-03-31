@@ -8,8 +8,22 @@
 
 
 
+/**
+ * La fonction `saveInPartition` enregistre une structure de partition, un tableau FAT et des données
+ * de bloc dans un fichier spécifié par `partitionName`.
+ * 
+ * @param partition Le paramètre `partition` est une structure représentant une partition dans un
+ * système de fichiers. Il contient des informations telles que le prochain bloc libre, le nombre de
+ * blocs libres, la table d'allocation de fichiers (FAT) et les blocs de données. La fonction
+ * `saveInPartition` est chargée de sauvegarder cette partition dans un fichier
+ * @param partitionName Le paramètre `partitionName` est un pointeur vers un tableau de caractères qui
+ * représente le nom du fichier de partition dans lequel les données de partition seront enregistrées.
+ */
 void saveInPartition(Partition partition, char *partitionName) {
     FILE *partition_file = fopen(partitionName, "rb+");
+
+    partition.next_free_block = findFirstFreeBlock(&partition);
+    partition.free_blocks = calculateEmptyBlocks(&partition);
     if (!partition_file) {
         perror("Création de la nouvelle partition");
         partition_file = fopen(partitionName, "wb+");;
@@ -42,6 +56,17 @@ void saveInPartition(Partition partition, char *partitionName) {
     fclose(partition_file);
 }
 
+/**
+ * La fonction `loadPartition` lit les informations de partition, FAT et les données de bloc d'un
+ * fichier dans une structure `Partition`.
+ * 
+ * @param partition Le paramètre `partition` est un pointeur vers une structure `Partition`. Cette
+ * structure contient probablement des informations sur une partition de disque, telles que des
+ * métadonnées, une table d'allocation de fichiers (FAT) et des blocs de données. La fonction
+ * `loadPartition` lit ces informations à partir d'un fichier spécifié par `partitionName` et pop
+ * @param partitionName Le paramètre `partitionName` est un pointeur vers un tableau de caractères qui
+ * représente le nom du fichier contenant les données de partition qui doivent être chargées.
+ */
 void loadPartition(Partition *partition, char *partitionName) {
     FILE *partition_file = fopen(partitionName, "rb");
     if (!partition_file) {
@@ -78,6 +103,16 @@ void loadPartition(Partition *partition, char *partitionName) {
 
 
 
+/**
+ * La fonction `create_or_load_partition` vérifie si un fichier de partition existe, crée une nouvelle
+ * partition si ce n'est pas le cas, ou charge la partition existante si c'est le cas.
+ * 
+ * @param partitionName Le paramètre `partitionName` est un pointeur vers un tableau de caractères qui
+ * représente le nom du fichier de partition à créer ou à charger.
+ * 
+ * @return La fonction `create_or_load_partition` renvoie une structure `Partition`, soit une partition
+ * nouvellement créée, soit une partition chargée à partir d'un fichier existant.
+ */
 Partition create_or_load_partition(char *partitionName) {
     FILE *partition_file = fopen(partitionName, "rb+");
     bool exists = partition_file != NULL; // Modifier la vérification de l'existence du fichier
@@ -97,6 +132,17 @@ Partition create_or_load_partition(char *partitionName) {
     return partition;
 }
 
+/**
+ * La fonction crée une nouvelle partition en l'initialisant, en l'enregistrant dans un fichier et en
+ * renvoyant la partition.
+ * 
+ * @param partitionName Le paramètre `partitionName` est un pointeur vers un tableau de caractères
+ * (chaîne) qui représente le nom de la partition à créer.
+ * 
+ * @return La fonction `create_new_partition` renvoie une structure `Partition` après avoir créé un
+ * nouveau fichier de partition, initialisé la partition, enregistré les données dans la partition et
+ * fermé le fichier.
+ */
 Partition create_new_partition(char* partitionName){
     Partition partition;
     FILE* partition_file = fopen(partitionName, "wb");
@@ -110,6 +156,14 @@ Partition create_new_partition(char* partitionName){
     return partition; 
 }
 
+/**
+ * La fonction `initPartition` initialise une structure de partition en définissant les entrées FAT sur
+ * 0, en initialisant les informations de fichier pour chaque fichier et en définissant le nombre de
+ * blocs libres et l'index du prochain bloc libre.
+ * 
+ * @param partition La fonction `initPartition` initialise une structure de partition avec les
+ * paramètres suivants :
+ */
 void initPartition(Partition *partition) {
     memset(partition->fat, 0, sizeof(bool) * FAT_SIZE);    
     for (int i = 0; i < FAT_SIZE; ++i) {
@@ -122,13 +176,11 @@ void initPartition(Partition *partition) {
 
 void printPartitionData(Partition partition) {
     printf("**********************************\n");
-    printf("Block Free : %d\n", partition.free_blocks);
-    printf("Next Empty : %d\n", partition.next_free_block);
-    for (int i = 0; i < FAT_SIZE; i++) {
+    printf("\nFichiers de la parition\n");
+    for (int i = 0; i < FAT_SIZE; i++){
         if(!partition.files[i].is_free){
         printf("File %d - Name: %s, Size: %d, is_free: %d\n", i + 1,
                    partition.files[i].name, partition.files[i].size,  partition.files[i].is_free);
-
         }
     }
     printf("**********************************\n");
@@ -162,14 +214,11 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
  * @return Retourne 0 si l'opération d'écriture du fichier réussit. Retourne -1 en cas d'erreur
  *         lors du processus, telles qu'un fichier du même nom déjà existant, un manque d'espace
  *         libre pour le fichier, des blocs libres insuffisants, etc.
- */
-int writeToFile(Partition *partition, char* partition_name ,char *filename, void *data, int size) {
+ */int writeToFile(Partition *partition, char* partition_name ,char *filename, void *data, int size) {
     // Vérifie si un fichier     avec le même nom existe déjà dans la partition
-    for (int i = 0; i < FAT_SIZE; i++) {
-        if (strcmp(partition->files[i].name, filename) == 0) {
-            printf("Erreur: Un fichier avec le même nom existe déjà dans la partition.\n");
-            return -1;
-        }
+    if(exists(partition, filename)){
+        printf("Le fichier existe déjà");
+        return 1; 
     }
 
     // Si aucun fichier avec le même nom n'existe, procéder à l'écriture du fichier
@@ -186,21 +235,21 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
     }
 
     // Calcul du nombre de blocs nécessaires pour stocker les données du fichier
-    int blocks_needed = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
-
-    // Recherche d'emplacements libres dans la FAT
-    int start_block = -1;
-    int blocks_allocated = 0;
+    int blocks_needed = (int)size / BLOCK_SIZE;
+    blocks_needed = blocks_needed>0 ?blocks_needed :1;
+    printf("%d", blocks_needed);
+    int blocks_allocated = 0; 
+    LinkedList list; 
+    initList(&list); 
     for (int i = 0; i < FAT_SIZE && blocks_allocated < blocks_needed; i++) {
         if (!partition->fat[i]) {
-            if (start_block == -1) {
-                start_block = i;
-            }
             partition->fat[i] = true;
             blocks_allocated++;
+            append(&list, i, INT_TYPE);
         }
     }
-
+    printf("\n Alors la liste les indices : ");
+    printList(list);
     // Vérifie si suffisamment de blocs libres ont été trouvés
     if (blocks_allocated < blocks_needed) {
         printf("Erreur: Pas assez de blocs libres disponibles.\n");
@@ -208,29 +257,24 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
     }
 
     // Copie des données dans les blocs alloués
-    int current_block = start_block;
     int remaining_size = size;
+    int index;
     int offset = 0;
-    int fileSize = 0;
-    while (remaining_size > 0) {
+    while (list !=NULL) {
+        index = list->value.intValue;
         int bytes_to_copy = remaining_size < BLOCK_SIZE ? remaining_size : BLOCK_SIZE;
-        fileSize = strlen(partition->data[current_block]) + 1*sizeof(char); 
-        memcpy(partition->data[current_block], (char *)data + offset, bytes_to_copy);
+        memcpy(partition->data[index], (char *)data + offset, bytes_to_copy);
+        memcpy(partition->files[index].name, filename, sizeof(partition->files[index].name));
+        partition->files[index].size = (strlen(data)+1)*sizeof(char);
+        partition->files[index].is_free = false; // Marquer le fichier comme occupé
         remaining_size -= bytes_to_copy;
         offset += bytes_to_copy;
-        current_block++;
+        list = list->next;
     }
 
-    // Mise à jour des informations sur le fichier dans la partition
-    strncpy(partition->files[file_index].name, filename, sizeof(partition->files[file_index].name));
-    partition->files[file_index].size = fileSize;
-    partition->files[file_index].is_free = false; // Marquer le fichier comme occupé
+    saveInPartition(*partition, partition_name);
+    loadPartition(partition, partition_name); 
 
-    // Mise à jour des informations sur la partition
-    partition->free_blocks = calculateEmptyBlocks(partition);
-    partition->next_free_block += blocks_needed;
-
-    saveInPartition(*partition, partition_name); 
     return 0; // Écriture du fichier réussie
 }
 
@@ -259,7 +303,6 @@ int calculateEmptyBlocks(Partition *partition) {
  * correspondent à un fichier avec le nom spécifié (`filename`) dans la partition donnée. Chaque élément
  * de la liste représente l'index d'un bloc de fichier.
  */
-
 LinkedList findIndexesByName(Partition *partition, char *filename) {
     LinkedList indexes = NULL;
     for (int i = 0; i < FAT_SIZE; ++i) {
@@ -414,21 +457,22 @@ void printPartitionState(Partition* partition) {
     printf("Blocs libres : %d\n", partition->free_blocks);
     printf("Bloc suivant libre : %d\n", partition->next_free_block);
 
-    for(int i=1; i<=FAT_SIZE; i++){
+    for(int i=0; i<FAT_SIZE; i++){
         if(i%10==0){
-            if(!partition->files[i-1].is_free){
+            printf("\n");
+            if(!partition->files[i].is_free){
                 printf("[Taken] ");
             } else {
-                printf("[-]    ");
+                printf("[-----] ");
             }
-            printf("\n");
         }else{
             if(!partition->files[i].is_free){
                 printf("[Taken] ");
             } else {
-                printf("[-]    ");
+                printf("[-----] ");
             }
         }
 
     }
+    printf("\n");
 }

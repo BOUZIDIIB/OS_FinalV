@@ -7,7 +7,7 @@
 */
 #define CHARGER 1
 #define FORMATER 2
-#define QUIT_FORMAT 3
+#define QUIT_FORMAT 3 
 
 
 /**

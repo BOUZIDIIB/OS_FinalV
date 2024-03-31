@@ -92,6 +92,7 @@ void editFile() {
 
 void fileOperation() {
     char userEntry[MAX_FILENAME_LENGTH];
+    printPartitionData(partition);
     printf("\n\nEntrez le nom du fichier à ouvrir : ");
     scanf("%s", userEntry);
     userEntry[strcspn(userEntry, "\n")] = '\0'; // Supprimer le caractère de nouvelle ligne
@@ -105,7 +106,7 @@ void fileOperation() {
             int choix;
             printf("\n\n???????????????????????????????????????\n");
 
-            printf("\n\tMenu Fichier :\n\n");
+            printf("\n\tMenu Fichier %s :\n\n", userEntry);
             printf("%d. Information sur le fichier\n", INFO_FILE);
             printf("%d. Supprimer le fichier\n", REMOVE_FILE);
             printf("%d. Modifier le fichier\n", EDIT_FILE);
@@ -144,7 +145,8 @@ void fileOperation() {
     } else {
         printf("Création du fichier dans la partition.\n");
         currentFile = myOpen(&partition, partitionName, userEntry);
-        printf("Création du fichier réussie!\n");    
+        printf("Création du fichier réussie!\n");  
+        fileOperation();  
     }
 
 
@@ -165,7 +167,6 @@ bool openPartitionOperation(char choice){
             fileOperation();
             break;
         case PARTITION_STATE:
-            printf("\tEtat de la partition %s\n", partitionName);
             printPartitionState(&partition);
             printPartitionData(partition);
             break;
