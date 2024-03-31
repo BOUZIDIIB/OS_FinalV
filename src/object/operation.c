@@ -122,9 +122,8 @@ void initPartition(Partition *partition) {
 
 void printPartitionData(Partition partition) {
     printf("**********************************\n");
-    printf("PARTITION INFO\n");
-    printf("block  free %d\n", partition.free_blocks);
-    printf("next empty%d\n", partition.next_free_block);
+    printf("Block Free : %d\n", partition.free_blocks);
+    printf("Next Empty : %d\n", partition.next_free_block);
     for (int i = 0; i < FAT_SIZE; i++) {
         if(!partition.files[i].is_free){
         printf("File %d - Name: %s, Size: %d, is_free: %d\n", i + 1,
@@ -165,7 +164,7 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
  *         libre pour le fichier, des blocs libres insuffisants, etc.
  */
 int writeToFile(Partition *partition, char* partition_name ,char *filename, void *data, int size) {
-    // Vérifie si un fichier avec le même nom existe déjà dans la partition
+    // Vérifie si un fichier     avec le même nom existe déjà dans la partition
     for (int i = 0; i < FAT_SIZE; i++) {
         if (strcmp(partition->files[i].name, filename) == 0) {
             printf("Erreur: Un fichier avec le même nom existe déjà dans la partition.\n");
@@ -212,8 +211,10 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
     int current_block = start_block;
     int remaining_size = size;
     int offset = 0;
+    int fileSize = 0;
     while (remaining_size > 0) {
         int bytes_to_copy = remaining_size < BLOCK_SIZE ? remaining_size : BLOCK_SIZE;
+        fileSize = strlen(partition->data[current_block]) + 1*sizeof(char); 
         memcpy(partition->data[current_block], (char *)data + offset, bytes_to_copy);
         remaining_size -= bytes_to_copy;
         offset += bytes_to_copy;
@@ -222,7 +223,7 @@ int writeToFile(Partition *partition, char* partition_name ,char *filename, void
 
     // Mise à jour des informations sur le fichier dans la partition
     strncpy(partition->files[file_index].name, filename, sizeof(partition->files[file_index].name));
-    partition->files[file_index].size = size;
+    partition->files[file_index].size = fileSize;
     partition->files[file_index].is_free = false; // Marquer le fichier comme occupé
 
     // Mise à jour des informations sur la partition
@@ -244,58 +245,6 @@ int calculateEmptyBlocks(Partition *partition) {
     return empty_blocks;
 }
 
-int updateFileContent(Partition *partition, char *partition_name, char *filename, void *data, int size) {
-    // Vérifier si un fichier avec le même nom existe déjà dans la partition
-    void *fileIndexes = findIndexesByName(partition, filename);
-    if (fileIndexes == NULL) {
-        printf("Aucun fichier enregistré à ce nom, veuillez créer un fichier.\n");
-        return -1;
-    }
-
-    // Copier le nouveau contenu dans les blocs correspondants
-    int offset = 0;
-    void *current = fileIndexes;
-    while (current != NULL && offset < size) {
-        memcpy(partition->data[*((int *)current)], (char *)data + offset, BLOCK_SIZE);
-        offset += BLOCK_SIZE;
-        current = ((int *)current) + 1;
-    }
-
-    // Mettre à jour la taille du fichier
-    int fileSize = size; // Calculer le nombre de blocs nécessaires
-    strncpy(partition->files[*((int *)fileIndexes)].name, filename, sizeof(partition->files[*((int *)fileIndexes)].name));
-    partition->files[*((int *)fileIndexes)].size = fileSize;
-
-    // Libérer la mémoire utilisée par la liste des index des blocs du fichier
-    clear(fileIndexes);
-
-    // Mettre à jour les informations sur les blocs libres
-    int blocCourant = partition->next_free_block;
-    int blocPrecedent = -1;
-    while (blocCourant != -1) {
-        if (partition->fat[blocCourant] == false) {
-            partition->fat[blocCourant] = true;
-            partition->free_blocks--;
-            if (blocPrecedent != -1) {
-                partition->fat[blocPrecedent] = false;
-            }
-            break;
-        }
-        blocPrecedent = blocCourant;
-        blocCourant = (blocCourant + 1) % FAT_SIZE;
-    }
-    if (blocCourant == -1) {
-        printf("Aucun bloc libre trouvé pour écrire le contenu du fichier.\n");
-        return -1;
-    }
-    partition->next_free_block = blocCourant;
-    partition->free_blocks = calculateEmptyBlocks(partition);
-
-    // Mise à jour des informations sur la partition
-    saveInPartition(*partition, partition_name);
-
-    return 0; // Écriture du fichier réussie
-}
 
 
 /**
@@ -322,6 +271,25 @@ LinkedList findIndexesByName(Partition *partition, char *filename) {
     return indexes;
 }
 
+
+int updateFileContent(Partition *partition, char *partition_name, char *filename, void *data, int size) {
+    deleteFile(partition, partition_name, filename);    
+    writeToFile(partition, partition_name, filename, data, strlen(data));
+    return 0; 
+
+}
+
+
+int findFirstFreeBlock(Partition *partition) {
+    for (int i = 0; i < FAT_SIZE; ++i) {
+        if (!partition->fat[i]) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
 /**
  * La fonction `readWholeFile` lit les données d'une liste d'index de bloc dans une partition et les
  * concatène dans une liste chaînée représentant le contenu d'un fichier.
@@ -333,7 +301,7 @@ LinkedList findIndexesByName(Partition *partition, char *filename) {
  * @return Une `LinkedList` contenant le contenu du fichier lu à partir de la partition spécifiée,
  * en fonction des index fournis. Chaque élément de la liste contient les données d'un bloc de fichier.
  */
-LinkedList readWholeFile(Partition *partition, LinkedList indexes) {
+char* readWholeFile(Partition *partition, LinkedList indexes) {
     LinkedList result = NULL;
     LinkedList current = NULL;
 
@@ -347,7 +315,6 @@ LinkedList readWholeFile(Partition *partition, LinkedList indexes) {
         exit(EXIT_FAILURE);
     }
 
-    // Lecture des données de chaque bloc et concaténation dans le contenu du fichier
     char *contentBuffer = (char *)malloc(BLOCK_SIZE * sizeof(char));
     if (!contentBuffer) {
         perror("Erreur: Impossible d'allouer de la mémoire pour le tampon de contenu");
@@ -366,27 +333,24 @@ LinkedList readWholeFile(Partition *partition, LinkedList indexes) {
     }
     free(contentBuffer);
 
-    // Transformation du contenu du fichier en une liste chaînée de caractères
-    for (int i = 0;  fileContent[i] != '\0'; i++) {
-        append(&result, fileContent[i], CHAR_TYPE);
-    }
-    free(fileContent);
-
-    return result;
+    return fileContent;
 }
 
 /**
- * La fonction `readFile` lit le contenu d'un fichier à partir d'une partition donnée en fonction du
- * nom du fichier.
+ * La fonction `readFile` lit le contenu d'un fichier à partir d'une partition donnée en recherchant
+ * les index des fichiers puis en lisant l'intégralité du fichier.
  * 
- * @param partition Un pointeur vers une structure `Partition` représentant la partition à partir
- * de laquelle le fichier doit être lu.
- * @param filename Le nom du fichier à lire.
+ * @param partition Le paramètre « partition » fait probablement référence à une structure de données
+ * représentant une partition sur un périphérique de stockage, tel qu'un disque dur. Il peut contenir
+ * des informations sur les fichiers et répertoires stockés dans cette partition.
+ * @param fileName Le paramètre `fileName` est un pointeur vers un tableau de caractères qui représente
+ * le nom du fichier que vous souhaitez lire à partir de la `Partition` spécifiée.
  * 
- * @return Une `LinkedList` contenant les index des blocs de données correspondant au fichier spécifié
- * par `filename` dans la partition. Chaque élément de la liste contient l'index d'un bloc de données.
+ * @return La fonction `readFile` renvoie un pointeur vers un tableau de caractères (char*) qui
+ * contient le contenu du fichier spécifié par le paramètre `fileName` dans la `Partition` spécifiée
+ * par le paramètre `partition`.
  */
-LinkedList readFile(Partition partition, char* fileName){
+char* readFile(Partition partition, char* fileName){
     LinkedList fileIndex = findIndexesByName(&partition, fileName);
     return readWholeFile(&partition, fileIndex); 
 }

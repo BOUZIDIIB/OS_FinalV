@@ -30,8 +30,8 @@ void printPartitionData(Partition partition);
 void initPartition(Partition *partition);
 void saveInPartition(Partition partition, char *partitionName);
 void loadPartition(Partition* partition, char *partitionName);
-LinkedList readWholeFile(Partition *partition, LinkedList indexes); //
-LinkedList readFile(Partition Partition, char* fileName); //
+char* readWholeFile(Partition *partition, LinkedList indexes); //
+char* readFile(Partition Partition, char* fileName); //
 LinkedList findIndexesByName(Partition *partition, char *filename); 
 int writeToFile(Partition *partition, char* partition_name ,char *filename, void *data, int size); 
 void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free); 
@@ -41,5 +41,6 @@ int deleteFile(Partition *partition, char* partitionName, char* filename);
 int exists(Partition *partition, char* fileName);
 void printPartitionState(Partition* partition); 
 int calculateEmptyBlocks(Partition *partition); 
+int findFirstFreeBlock(Partition *partition);
 
 #endif

@@ -13,70 +13,39 @@ bool isSet;
 
 
 
+
+
+
 int main() {
     isSet = false;
     int result;
     bool end= false;
     while (!end) {
-        char choix;
-        printf("\nMenu:\n");
-        printf("1. Chargement ou création de partition\n");
+        int choix;
+        printf("\n\n???????????????????????????????????????\n");
+
         if(isSet){
-            printf("2. Opérations sur fichier\n");
-            printf("3. Afficher l'état de la partition\n");
-            printf("4. Quitter\n");
+            printf("\n\tMenu Partition %s :\n\n", partitionName);
+            printf("%d. Chargement ou création de partition\n", LOAD_FORMAT_PARTITION);
+            printf("%d. Opérations sur fichier\n", FILE_OPERATION);
+            printf("%d. Afficher l'état de la partition\n", PARTITION_STATE);
+            printf("%d. Quitter\n", QUIT);
         }else{
-            printf("2. Quitter\n");
+            printf("\n\tMenu :\n\n");
+            printf("%d. Chargement ou création de partition\n", LOAD_FORMAT_PARTITION);
+            printf("%d. Quitter\n", QUIT_UNOPENED);
         }
+        printf("\n\n???????????????????????????????????????\n");
         printf("Choix: ");
-        scanf(" %c", &choix);
+        if (scanf("%d", &choix) != 1) {
+            printf("Erreur : Veuillez saisir un entier valide.\n");
+            while (getchar() != '\n');
+            continue;        
+        }
         if(isSet){
-            switch (choix) {
-                case '1':
-                    printf("*****************************************************");
-                    printf("\nChargement ou création de partition\n");
-                    partitionOperation();
-                    printf("*****************************************************");
-
-                    break;
-                case '2':
-                    printf("*****************************************************");
-                    printf("\nOpérations sur fichier\n");
-                    fileOperation();
-                    printf("*****************************************************");
-
-
-                    break;
-                case '3':
-                    printf("*****************************************************");
-                    printf("\nEtat de la partition %s\n", partitionName);
-                    // printPartitionState(&partition);
-                    printPartitionData(partition);
-                    printf("*****************************************************");
-
-                    break;
-                case '4':
-                    end = true; 
-                    printf("Au revoir !\n");
-                    exit(0);
-                default:
-                    printf("Choix invalide. Veuillez choisir une option valide.\n");
-            }
+            end = openPartitionOperation(choix);
         }else{
-            switch (choix) {
-                case '1':
-                    printf("*****************************************************");
-                    printf("\nChargement ou création de partition\n");
-                    partitionOperation();
-                    printf("*****************************************************");
-                    break;
-                case '2':
-                    end = true; 
-                    printf("Au revoir !\n");
-                    exit(0);
-                default:
-                    printf("Choix invalide. Veuillez choisir une option valide.\n");
-            }
+            end = unOpenedParitionOperation(choix);
         }
     }
 

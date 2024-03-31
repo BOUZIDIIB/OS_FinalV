@@ -48,31 +48,12 @@ int myFormat(Partition * partition, char* partitionName) {
 File myOpen(Partition *partition, char* partitionName, char *fileName) {
     File file;
     file.fileName = fileName;
-
     if (exists(partition, fileName)) {
-        // Si le fichier existe, vous pouvez décider de le lire dans 'file.content'
-        // Par exemple, vous pouvez utiliser la fonction 'readFile' pour obtenir le contenu du fichier
-
-        LinkedList content = readFile(*partition, fileName);
-        file.size = len(content);
-
-        // Allouez de la mémoire pour 'file.content'
-        file.content = (char*)malloc(file.size + 1); // +1 pour le caractère de fin de chaîne '\0'
-        if (file.content == NULL) {
-            perror("Erreur d'allocation de mémoire");
-            exit(EXIT_FAILURE);
-        }
-
-        // Copiez le contenu du fichier dans 'file.content'
-        int i = 0;
-        while (content != NULL) {
-            file.content[i] = content->value.charValue;
-            content = content->next;
-            i++;
-        }
-        file.content[i] = '\0'; // Ajoutez le caractère de fin de chaîne
+        char* content = readFile(*partition, fileName);
+        file.size= (strlen(content)+1)*sizeof(char);
+        file.content = (char*)malloc(file.size * sizeof(char));
+        strcpy(file.content, content);
     } else {
-        // Si le fichier n'existe pas, initialiser 'file.content' à une chaîne vide
         file.content = "";
         file.size = 0;
         writeToFile(partition, partitionName, file.fileName, file.content, file.size ); 
@@ -86,28 +67,16 @@ int myWrite(Partition *partition, char* partitionName,File* f){
 }   
 
 void setFileContent(File* file, char* data) {
-    // Vérifier si le contenu existe déjà
-    // if (file->content != NULL) {
-    //     // Si oui, libérer la mémoire
-    //     free(file->content);
-    //     file->content = NULL;
-    // }
-
-    // Vérifier si la donnée est vide
     if (data == NULL) {
         file->size = 0;
         return; // Sortir de la fonction si la donnée est vide
     }
-
-    // Allouer de la mémoire pour la nouvelle donnée
     file->size = strlen(data);
     file->content = (char*)malloc((file->size + 1) * sizeof(char)); // +1 pour le caractère nul de fin de chaîne
     if (file->content == NULL) {
         fprintf(stderr, "Erreur d'allocation de mémoire\n");
         exit(EXIT_FAILURE);
     }
-
-    // Copier la nouvelle donnée dans le contenu du fichier
     strcpy(file->content, data);
 }
 
@@ -133,7 +102,7 @@ void displayFile(File* file) {
 
     printf("Nom du fichier : %s\n", file->fileName);
     printf("Taille du fichier : %d octets\n", file->size);
-    if(file->size > 0){
+    if(file->size > 1){
         printf("Contenu du fichier :\n%s\n", file->content);
     }else{
         printf("(Vide)\n");
@@ -155,7 +124,7 @@ void myRemove(Partition *partition, char* partitionName, char* fileName){
     deleteFile(partition, partitionName, fileName);
 }
 
-
+// Fonction pour libérer la mémoire allouée pour un fichier
 void freeFile(File* file) {
     if (file == NULL) {
         return;
