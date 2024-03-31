@@ -1,6 +1,10 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
+/**
+ * @brief Fonctions et structures de _support_ pour les listes chaînées 
+*/
+
 typedef enum {
     INT_TYPE,
     CHAR_TYPE

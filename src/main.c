@@ -6,12 +6,10 @@
 #include "menu.h"
 
 
-Partition partition;
+Partition partition; 
 char* partitionName;
 File currentFile;
 bool isSet;
-
-
 
 int main() {
     isSet = false;

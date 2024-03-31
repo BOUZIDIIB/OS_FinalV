@@ -17,6 +17,10 @@ extern bool isSet;
 
 
 
+/**
+ * La fonction `partitionOperation` permet à l'utilisateur de choisir entre charger, formater une partition ou de
+ * quitter le menu d'opérations sur partition.
+ */
 void partitionOperation() {
     int choix;
     char userEntry[MAX_PARTITION_NAME_LENGTH];
@@ -74,6 +78,10 @@ void partitionOperation() {
     }
 }
 
+/**
+ * La fonction `editFile` lit les entrées de l'utilisateur pour mettre à jour le contenu d'un fichier
+ * et écrit les modifications sur une partition.
+ */
 void editFile() {
     char buffer[MAX_BUFFER_LENGTH];
 
@@ -90,6 +98,12 @@ void editFile() {
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
+/**
+ * La fonction ` fileOperation ` permet à l'utilisateur d'interagir avec les fichiers d'une partition,
+ * en fournissant des options pour ouvrir, afficher des informations, modifier ou supprimer un fichier.
+ * 
+ * @return La fonction `fileOperation()` renvoie void.
+ */
 void fileOperation() {
     char userEntry[MAX_FILENAME_LENGTH];
     printPartitionData(partition);
@@ -154,6 +168,20 @@ void fileOperation() {
 
 
 
+/**
+ * La fonction `openPartitionOperation` prend une entrée de choix et effectue différentes opérations en
+ * fonction du choix sélectionné, comme le chargement ou la création d'une partition, les opérations
+ * sur les fichiers, l'affichage de l'état de la partition ou la fermeture du programme.
+ * 
+ * @param choice Le paramètre `choice` dans la fonction `openPartitionOperation` est de type `char`. Il
+ * est utilisé pour déterminer quelle opération effectuer en fonction de la saisie de l'utilisateur. La
+ * fonction utilise une instruction switch pour exécuter différentes actions en fonction de la valeur
+ * de ` choix `.
+ * 
+ * @return La fonction `openPartitionOperation` renvoie une valeur booléenne indiquant si le programme
+ * doit se terminer ou non. Si l'utilisateur choisit de quitter (option QUITTER), la fonction définit
+ * la variable `end` sur true et la renvoie. Sinon, il renvoie faux.
+ */
 bool openPartitionOperation(char choice){
     bool end = false; 
     printf("\n***************************************\n\n");
@@ -182,12 +210,27 @@ bool openPartitionOperation(char choice){
 }
 
 
+/**
+ * La fonction `unOpenedParitionOperation` gère différentes opérations en fonction du choix de
+ * l'utilisateur, comme charger ou créer une partition, quitter ou afficher un message d'erreur pour
+ * des choix non valides.
+ * 
+ * @param choice Le paramètre ` choix ` dans la fonction ` unOpenedParitionOperation ` est un caractère
+ * qui représente la sélection de l'utilisateur pour une opération spécifique. La fonction vérifie la
+ * valeur de ` choix ` par rapport à des constantes prédéfinies telles que ` LOAD_FORMAT_PARTITION ` et
+ * ` QUIT_UNOPENED ` pour déterminer l'action à effectuer.
+ * 
+ * @return La fonction `unOpenedParitionOperation` renvoie une valeur booléenne indiquant si le
+ * programme doit se terminer ou non. Si le paramètre `choice` correspond à `QUIT_UNOPENED`, la
+ * fonction définit `end` sur true et le renvoie. Sinon, il renvoie la valeur initiale de ` end `, qui
+ * est fausse.
+ */
 bool unOpenedParitionOperation(char choice){
     bool end = false;
     printf("***************************************\n\n");
     switch (choice) {
         case LOAD_FORMAT_PARTITION:
-            printf("\tChargement ou création de partition\n");
+            printf("Chargement ou création de partition\n");
             partitionOperation();
             break;
         case QUIT_UNOPENED:

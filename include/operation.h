@@ -2,13 +2,15 @@
 #define PARTITION_H
 
 #include <stdbool.h>
-
 #include "linkedList.h"
 
 #define FAT_SIZE 100
 #define BLOCK_SIZE 1024
 #define PARTITION_SIZE 1000 
 
+/**
+ * @brief Déclaration des fonctions permettant la manipulation de la partition
+*/
 
 typedef struct {
     char name[100];
@@ -42,5 +44,6 @@ int exists(Partition *partition, char* fileName);
 void printPartitionState(Partition* partition); 
 int calculateEmptyBlocks(Partition *partition); 
 int findFirstFreeBlock(Partition *partition);
+
 
 #endif

@@ -61,7 +61,7 @@ void saveInPartition(Partition partition, char *partitionName) {
  * fichier dans une structure `Partition`.
  * 
  * @param partition Le paramètre `partition` est un pointeur vers une structure `Partition`. Cette
- * structure contient probablement des informations sur une partition de disque, telles que des
+ * structure contient  des informations sur une partition de disque, telles que des
  * métadonnées, une table d'allocation de fichiers (FAT) et des blocs de données. La fonction
  * `loadPartition` lit ces informations à partir d'un fichier spécifié par `partitionName` et pop
  * @param partitionName Le paramètre `partitionName` est un pointeur vers un tableau de caractères qui
@@ -174,19 +174,41 @@ void initPartition(Partition *partition) {
 }
 
 
+/**
+ * La fonction `printPartitionData` imprime des informations sur les fichiers d'une partition.
+ * 
+ * @param partition La fonction `printPartitionData` prend une structure `Partition` comme paramètre.
+ * La structure ` Partition ` contient un tableau de structures ` Fichier ` représentant
+ * les fichiers de la partition. La fonction parcourt les fichiers de la partition et imprime des
+ * informations sur chaque fichier telles que son nom, sa taille,
+ */
 void printPartitionData(Partition partition) {
     printf("**********************************\n");
-    printf("\nFichiers de la parition\n");
+    printf("\n\tDonnées de la parition\n\n");
     for (int i = 0; i < FAT_SIZE; i++){
         if(!partition.files[i].is_free){
-        printf("File %d - Name: %s, Size: %d, is_free: %d\n", i + 1,
-                   partition.files[i].name, partition.files[i].size,  partition.files[i].is_free);
+        printf("Bloc %d - File Name: %s, Total File Size: %d\n", i + 1,
+                   partition.files[i].name, partition.files[i].size);
         }
     }
     printf("**********************************\n");
 }
 
 
+/**
+ * La fonction `initFileInfo` initialise une structure `FileInfo` avec le nom, la taille et l'état
+ * libre fournis.
+ * 
+ * @param fileInfo `fileInfo` est un pointeur vers une structure `FileInfo`.
+ * @param name Une chaîne représentant le nom du fichier.
+ * @param size Le paramètre `size` dans la fonction `initFileInfo` représente la taille du fichier en
+ * octets. Il s'agit d'une valeur entière qui indique la taille du fichier en cours d'initialisation
+ * dans la structure `FileInfo`.
+ * @param is_free Le paramètre `is_free` dans la fonction `initFileInfo` est une valeur booléenne qui
+ * indique si le fichier est libre ou non. Si ` is_free ` est vrai, cela signifie que le fichier est
+ * disponible ou n'est pas utilisé. Si `is_free` est faux, cela signifie que le fichier est
+ * actuellement
+ */
 void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) {
     strncpy(fileInfo->name, name, sizeof(fileInfo->name));
     fileInfo->size = size;
@@ -215,7 +237,7 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
  *         lors du processus, telles qu'un fichier du même nom déjà existant, un manque d'espace
  *         libre pour le fichier, des blocs libres insuffisants, etc.
  */int writeToFile(Partition *partition, char* partition_name ,char *filename, void *data, int size) {
-    // Vérifie si un fichier     avec le même nom existe déjà dans la partition
+    // Vérifie si un fichier avec le même nom existe déjà dans la partition
     if(exists(partition, filename)){
         printf("Le fichier existe déjà");
         return 1; 
@@ -237,8 +259,8 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
     // Calcul du nombre de blocs nécessaires pour stocker les données du fichier
     int blocks_needed = (int)size / BLOCK_SIZE;
     blocks_needed = blocks_needed>0 ?blocks_needed :1;
-    printf("%d", blocks_needed);
     int blocks_allocated = 0; 
+    // Recherche des blocs libres
     LinkedList list; 
     initList(&list); 
     for (int i = 0; i < FAT_SIZE && blocks_allocated < blocks_needed; i++) {
@@ -248,8 +270,7 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
             append(&list, i, INT_TYPE);
         }
     }
-    printf("\n Alors la liste les indices : ");
-    printList(list);
+    
     // Vérifie si suffisamment de blocs libres ont été trouvés
     if (blocks_allocated < blocks_needed) {
         printf("Erreur: Pas assez de blocs libres disponibles.\n");
@@ -266,7 +287,7 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
         memcpy(partition->data[index], (char *)data + offset, bytes_to_copy);
         memcpy(partition->files[index].name, filename, sizeof(partition->files[index].name));
         partition->files[index].size = (strlen(data)+1)*sizeof(char);
-        partition->files[index].is_free = false; // Marquer le fichier comme occupé
+        partition->files[index].is_free = false;
         remaining_size -= bytes_to_copy;
         offset += bytes_to_copy;
         list = list->next;
@@ -275,10 +296,21 @@ void initFileInfo(FileInfo *fileInfo, const char *name, int size, bool is_free) 
     saveInPartition(*partition, partition_name);
     loadPartition(partition, partition_name); 
 
-    return 0; // Écriture du fichier réussie
+    return 0; 
 }
 
 
+/**
+ * La fonction calcule le nombre de blocs vides dans une partition donnée.
+ * 
+ * @param partition La fonction `calculateEmptyBlocks` prend un pointeur vers une structure `Partition`
+ * comme paramètre. La structure ` Partition ` contient  des informations sur une partition
+ * de disque, telles que la table d'allocation de fichiers (FAT) et d'autres données pertinentes. La
+ * fonction parcourt les entrées FAT et compte le nombre
+ * 
+ * @return La fonction `calculateEmptyBlocks` renvoie le nombre de blocs vides dans la FAT (File
+ * Allocation Table) de la structure `Partition` donnée.
+ */
 int calculateEmptyBlocks(Partition *partition) {
     int empty_blocks = 0;
     for (int i = 0; i < FAT_SIZE; ++i) {
@@ -314,7 +346,29 @@ LinkedList findIndexesByName(Partition *partition, char *filename) {
     return indexes;
 }
 
-
+/**
+ * La fonction `updateFileContent` met à jour le contenu d'un fichier dans une partition en supprimant
+ * le fichier existant et en y écrivant de nouvelles données.
+ * 
+ * @param partition Le paramètre ` partition ` est un pointeur vers une structure ` Partition `, qui
+ * contient  des informations sur une partition de stockage sur un système. Cette structure
+ * peut inclure des détails tels que la taille de la partition, l'espace utilisé, l'espace disponible,
+ * le type de système de fichiers, etc.
+ * @param partition_name Le paramètre `partition_name` est une chaîne qui représente le nom de la
+ * partition où se trouve le fichier ou où le contenu du fichier sera mis à jour.
+ * @param filename Le paramètre `filename` dans la fonction `updateFileContent` fait référence au nom
+ * du fichier dont vous souhaitez mettre à jour le contenu dans la partition spécifiée.
+ * @param data Le paramètre `data` dans la fonction `updateFileContent` représente le contenu que vous
+ * souhaitez écrire dans le fichier spécifié. Il s'agit d'un pointeur vers l'emplacement mémoire où les
+ * données sont stockées, et ` taille ` indique la taille des données en octets que vous souhaitez
+ * écrire dans le fichier.
+ * @param size Le paramètre `size` dans la fonction `updateFileContent` représente la taille des
+ * données que vous souhaitez écrire dans le fichier. Il indique le nombre d'octets dans les données
+ * que vous transmettez à la fonction. Ce paramètre est important pour écrire correctement les données
+ * dans le fichier sans aucune mémoire
+ * 
+ * @return La fonction `updateFileContent` renvoie une valeur entière de 0.
+ */
 int updateFileContent(Partition *partition, char *partition_name, char *filename, void *data, int size) {
     deleteFile(partition, partition_name, filename);    
     writeToFile(partition, partition_name, filename, data, strlen(data));
@@ -323,6 +377,18 @@ int updateFileContent(Partition *partition, char *partition_name, char *filename
 }
 
 
+/**
+ * La fonction `findFirstFreeBlock` recherche le premier bloc disponible dans la table d'allocation de
+ * fichiers d'une partition.
+ * 
+ * @param partition La partition est une structure de données représentant une section d'un disque qui
+ * a été divisée à des fins de stockage. Elle contient la table d'allocation de fichiers (FAT) et 
+ * des blocs de données.
+ * 
+ * @return La fonction `findFirstFreeBlock` renvoie l'index du premier bloc libre dans la FAT (File
+ * Allocation Table) de la structure `Partition` donnée. Si un bloc libre est trouvé, son index est
+ * renvoyé. Si aucun bloc libre n'est trouvé, la fonction renvoie -1.
+ */
 int findFirstFreeBlock(Partition *partition) {
     for (int i = 0; i < FAT_SIZE; ++i) {
         if (!partition->fat[i]) {
@@ -334,16 +400,19 @@ int findFirstFreeBlock(Partition *partition) {
 
 
 /**
- * La fonction `readWholeFile` lit les données d'une liste d'index de bloc dans une partition et les
- * concatène dans une liste chaînée représentant le contenu d'un fichier.
+ * La fonction `readWholeFile` lit le contenu d'un fichier stocké en blocs sur une partition en
+ * fonction des index fournis et renvoie le contenu concaténé sous forme de chaîne.
  * 
- * @param partition Un pointeur vers une structure `Partition` contenant les blocs de données à lire.
- * @param indexes Une liste chaînée contenant les index des blocs à lire à partir de la partition.
- * Chaque nœud de la liste contient l'index d'un bloc dans le tableau de données de la partition.
+ * @param partition Une structure `Partition` contenant des blocs de données.
+ * @param indexes Le paramètre `indexes` dans la fonction `readWholeFile` est une liste chaînée
+ * contenant les index des blocs qui stockent le contenu d'un fichier dans une partition. Chaque nœud
+ * de la liste chaînée contient une valeur entière représentant l'index d'un bloc dans le tableau de
+ * données de la partition.
  * 
- * @return Une `LinkedList` contenant le contenu du fichier lu à partir de la partition spécifiée,
- * en fonction des index fournis. Chaque élément de la liste contient les données d'un bloc de fichier.
+ * @return La fonction `readWholeFile` renvoie un pointeur vers un tableau de caractères qui contient
+ * le contenu concaténé de tous les blocs référencés par les index dans la partition donnée.
  */
+
 char* readWholeFile(Partition *partition, LinkedList indexes) {
     LinkedList result = NULL;
     LinkedList current = NULL;
@@ -383,7 +452,7 @@ char* readWholeFile(Partition *partition, LinkedList indexes) {
  * La fonction `readFile` lit le contenu d'un fichier à partir d'une partition donnée en recherchant
  * les index des fichiers puis en lisant l'intégralité du fichier.
  * 
- * @param partition Le paramètre « partition » fait probablement référence à une structure de données
+ * @param partition Le paramètre ` partition ` fait  référence à une structure de données
  * représentant une partition sur un périphérique de stockage, tel qu'un disque dur. Il peut contenir
  * des informations sur les fichiers et répertoires stockés dans cette partition.
  * @param fileName Le paramètre `fileName` est un pointeur vers un tableau de caractères qui représente
@@ -399,6 +468,24 @@ char* readFile(Partition partition, char* fileName){
 }
 
 
+/**
+ * La fonction `deleteFile` supprime un fichier d'une partition en marquant ses blocs comme libres dans
+ * la table d'allocation de fichiers (FAT) et en réinitialisant les informations sur le fichier dans la
+ * partition.
+ * 
+ * @param partition Le paramètre ` partition ` est un pointeur vers une structure ` Partition `, qui
+ * contient  des informations sur une partition de disque, telles que la table d'allocation
+ * de fichiers (FAT), des blocs de données et des informations sur les fichiers.
+ * @param partitionName Le paramètre `partitionName` est une chaîne qui représente le nom de la
+ * partition à partir de laquelle le fichier doit être supprimé. Il est utilisé pour identifier la
+ * partition spécifique dans laquelle le fichier existe.
+ * @param filename Le paramètre `filename` dans la fonction `deleteFile` est le nom du fichier que vous
+ * souhaitez supprimer de la partition spécifiée.
+ * 
+ * @return La fonction `deleteFile` renvoie une valeur entière. Si la suppression du fichier réussit,
+ * elle renvoie 0. S'il n'y a aucun fichier portant le nom spécifié dans la partition, elle renvoie -1
+ * pour indiquer que le fichier n'existe pas.
+ */
 int deleteFile(Partition *partition, char* partitionName, char* filename) {
     // Rechercher les index des blocs appartenant au fichier
     LinkedList fileIndexes = findIndexesByName(partition, filename);
@@ -413,16 +500,9 @@ int deleteFile(Partition *partition, char* partitionName, char* filename) {
         partition->fat[blockIndex] = false; // Marquer le bloc comme libre dans la FAT
         // Effacer le contenu du bloc si nécessaire
         memset(partition->data[blockIndex], 0, BLOCK_SIZE); // Remplir le bloc avec des zéros
+        initFileInfo(&(partition->files[blockIndex]), "", 0, true);
+        partition->fat[blockIndex] = false;
         fileIndexes = fileIndexes->next;
-    }
-
-    // Réinitialiser les informations sur le fichier dans la partition
-    for (int i = 0; i < FAT_SIZE; i++) {
-        if (strcmp(partition->files[i].name, filename) == 0) {
-            // Marquer le fichier comme libre
-            initFileInfo(&(partition->files[i]), "", 0, true);
-            break;
-        }
     }
 
     // Mise à jour des informations sur la partition
@@ -439,8 +519,8 @@ int deleteFile(Partition *partition, char* partitionName, char* filename) {
  * dans la table d'allocation de fichiers (FAT).
  * 
  * @param partition Un pointeur vers une structure `Partition` contenant des informations sur une partition
- *                  du système de fichiers, telles que la table d'allocation de fichiers (FAT) et des
- *                  informations sur les fichiers.
+ *                  du système de fichiers, telles que la table d'allocation de fichiers (FAT), des
+ *                  informations sur les fichiers et leur données.
     * @param filename Le nom du fichier à rechercher, spécifié en tant que tableau de caractères.
  * 
  * @return Retourne une valeur entière : 1 (vrai) si le fichier avec le nom donné est trouvé dans la
@@ -450,7 +530,14 @@ int exists(Partition *partition,char *filename) {
     return findIndexesByName(partition, filename) != NULL;
 }
 
-
+/**
+ * La fonction `printPartitionState` imprime l'état d'une partition incluant le nombre de blocs libres,
+ * le prochain bloc libre et l'état de chaque bloc dans la table d'allocation de fichiers.
+ * 
+ * @param partition La fonction `printPartitionState` est conçue pour imprimer l'état d'une partition,
+ * y compris le nombre de blocs libres, l'index du prochain bloc libre et l'état de chaque bloc dans la
+ * table d'allocation de fichiers (FAT) de la partition.
+ */
 void printPartitionState(Partition* partition) {
     printf("État de la partition :\n");
     printf("----------------------\n");

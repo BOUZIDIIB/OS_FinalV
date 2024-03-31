@@ -4,7 +4,7 @@
 #include "operation.h"
 
 /***
- * @brief 
+ * @brief Principales opérations demandées pour le projet
 */
 
 typedef struct File{
